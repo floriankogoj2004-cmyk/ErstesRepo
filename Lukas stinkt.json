@@ -1,0 +1,306 @@
+{
+  "name": "My workflow",
+  "nodes": [
+    {
+      "parameters": {
+        "downloadAttachments": true,
+        "options": {}
+      },
+      "type": "n8n-nodes-base.emailReadImap",
+      "typeVersion": 2.2,
+      "position": [
+        0,
+        16
+      ],
+      "id": "d401f8d2-6986-4465-bb69-4d02743b7617",
+      "name": "Email Trigger (IMAP)",
+      "credentials": {
+        "imap": {
+          "id": "93ApFoWwzIFMIqU4",
+          "name": "IMAP account 3"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "e7b3d384-3654-4dd5-a32a-e1986b2eb123",
+              "leftValue": "={{ Boolean($binary?.attachment_0) }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        224,
+        16
+      ],
+      "id": "76e28e79-4092-438f-9c23-68635638c781",
+      "name": "If"
+    },
+    {
+      "parameters": {
+        "operation": "pdf",
+        "binaryPropertyName": "attachment_0",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.extractFromFile",
+      "typeVersion": 1.1,
+      "position": [
+        448,
+        -128
+      ],
+      "id": "f08cd63c-e300-4c2a-a7f7-7410bedf1248",
+      "name": "Extract from File"
+    },
+    {
+      "parameters": {
+        "modelId": {
+          "__rl": true,
+          "value": "models/gemini-3-flash-preview",
+          "mode": "list",
+          "cachedResultName": "models/gemini-3-flash-preview"
+        },
+        "messages": {
+          "values": [
+            {
+              "content": "=Plaintext\nDu bist eine präziser Buchhaltungs-Assistent. Extrahiere die Daten aus dem übergebenen Text und antworte AUSSCHLIESSLICH mit einem validen JSON-Objekt ohne Markdown-Backticks.\nWICHTIG: Prüfe den Text der E-Mail. Wenn der Absender eine inhaltliche Frage stellt, ein Problem meldet oder eine Korrektur fordert, setze \"is_question\" auf true. Wenn er das Dokument nur kommentarlos schickt, setze es auf false.\n\nSchema:\n{\n  \"document_type\": \"invoice\",\n  \"is_question\": false, \n  \"sender_company\": \"string\",\n  \"document_date\": \"YYYY-MM-DD\",\n  ...\n}\n\nHier ist der Text der E-Mail:\n{{ $node[\"Email Trigger (IMAP)\"].json[\"textPlain\"] }}\n\nHier ist der Text aus dem angehängten PDF-Dokument:\n{{ $json.text }}"
+            }
+          ]
+        },
+        "builtInTools": {},
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.googleGemini",
+      "typeVersion": 1.2,
+      "position": [
+        672,
+        -128
+      ],
+      "id": "cf57a861-dc81-4647-a882-88f4b35b207f",
+      "name": "Message a model",
+      "credentials": {
+        "googlePalmApi": {
+          "id": "yPP8QTZ0BJqhX1Jc",
+          "name": "Google Gemini(PaLM) Api account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "for (const item of $input.all()) {\n  let rawText = item.json.content?.parts?.[0]?.text || item.json.text || item.json.message?.content || \"\";\n  rawText = rawText.replace(/```json/g, '').replace(/```/g, '').trim();\n  try {\n    item.json = JSON.parse(rawText);\n  } catch (e) {\n    item.json = { parse_error: true, raw: rawText };\n  }\n}\nreturn $input.all();"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1040,
+        -128
+      ],
+      "id": "d90634cc-9267-4974-990c-7a80f141914a",
+      "name": "Code in JavaScript"
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 3
+                },
+                "conditions": [
+                  {
+                    "id": "40c3c6b2-3de9-48eb-a70e-f7eb8886a5ec",
+                    "leftValue": "",
+                    "rightValue": "",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals",
+                      "name": "filter.operator.equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              }
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 3
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.is_question }}",
+                    "rightValue": "true",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    },
+                    "id": "0aafd05a-17c9-4924-ac82-8b35dab3c35e"
+                  }
+                ],
+                "combinator": "and"
+              }
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 3
+                },
+                "conditions": [
+                  {
+                    "id": "25ca201c-6900-488f-8171-07d9324a6a2f",
+                    "leftValue": "={{ $json.document_type }}",
+                    "rightValue": "invoice",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              }
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 3
+                },
+                "conditions": [
+                  {
+                    "id": "75261919-7ce9-4b87-bcf2-db2261057379",
+                    "leftValue": "={{ $json.document_type }}",
+                    "rightValue": "offer",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              }
+            }
+          ]
+        },
+        "options": {
+          "fallbackOutput": "extra"
+        }
+      },
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.4,
+      "position": [
+        1264,
+        -128
+      ],
+      "id": "79f8900f-c8ec-4040-9073-bb230c895cf0",
+      "name": "Switch"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Email Trigger (IMAP)": {
+      "main": [
+        [
+          {
+            "node": "If",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If": {
+      "main": [
+        [
+          {
+            "node": "Extract from File",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Message a model",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extract from File": {
+      "main": [
+        [
+          {
+            "node": "Message a model",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Message a model": {
+      "main": [
+        [
+          {
+            "node": "Code in JavaScript",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code in JavaScript": {
+      "main": [
+        [
+          {
+            "node": "Switch",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate",
+    "availableInMCP": false
+  },
+  "versionId": "e3735cd0-5518-4d28-b470-6fa151a73aab",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "656607736f04040ba72320dfa18c83d433bc8ef9d192908a40d33dc3cfc6398a"
+  },
+  "nodeGroups": [],
+  "id": "pcB5d7mioi7srtKf",
+  "tags": []
+}
