@@ -1,0 +1,10 @@
+
+# Geheimnisse & API-Keys
+.env
+api_keys.txt
+secrets.json
+
+# Test-Bilder & Belege
+*.jpg
+*.png
+*.pdf
